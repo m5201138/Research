@@ -20,6 +20,8 @@
 #include "Cell_inside.h"
 #include "Surface_builder.h"
 #include "implicit_function_csg.h"
+#include "implicit_function_min.h"
+#include "Surface_builder_dual.h"
 //#include "takeUnitPolyhedron.h"
 #include <utility>
 #include <fstream>
@@ -52,6 +54,17 @@
 #include <CGAL/Polygon_mesh_processing/refine.h>
 #include <CGAL/mesh_segmentation.h>
 #include <CGAL/Nef_polyhedron_3.h>
+#include <CGAL/Search_traits.h>
+//#include <CGAL/point_generators_3.h>
+#include <CGAL/Orthogonal_k_neighbor_search.h>
+#include "Point3.h"  // defines types Point, Construct_coord_iterator
+#include "Distance.h"
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Polygon_mesh_processing/refine.h>
+#include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
+#include <boost/foreach.hpp>
+
 
 #include <cstdlib>
 #include <iostream>
@@ -125,6 +138,8 @@ typedef implicit_function_hrbf<FT,Point > Hrbf_function;
 typedef implicit_function_crbf<FT,Point> Crbf_function;
 typedef CGAL::Implicit_surface_3<Kernel, Hrbf_function> Surface_3_hrbf;
 typedef CGAL::Implicit_surface_3<Kernel, Crbf_function> Surface_3_crbf;
+typedef CGAL::Implicit_surface_3<Kernel, implicit_function_csg> Surface_3_csg;
+typedef CGAL::Implicit_surface_3<Kernel, implicit_function_min> Surface_3_min;
 typedef CGAL::Delaunay_triangulation_3<Kernel> Delaunay;
 typedef Delaunay::Finite_cells_iterator Finite_cells_iterator;
 typedef Delaunay::Finite_facets_iterator Finite_facets_iterator;
@@ -144,7 +159,14 @@ typedef Delaunay::Cell_handle    Cell_handle;
 typedef Delaunay::Vertex_handle  Vertex_handle;
 typedef Delaunay::Locate_type    Locate_type;
 typedef Delaunay::Vertex_handle    Vertex_handle;
+typedef SurfaceMesh::Vertex_handle polyVertex_handle;
 typedef Delaunay::Finite_cells_iterator Finite_cells_iterator;
+typedef CGAL::Dimension_tag<3> D;
+typedef CGAL::Search_traits<double, PointForTree, const double*, Construct_coord_iterator, D> SearchTraits;
+typedef CGAL::Orthogonal_k_neighbor_search<SearchTraits, Distance> K_neighbor_search;
+typedef K_neighbor_search::Tree Tree;
+
+
 int reconstructionValue;
 double thr;
 double sigma;
@@ -160,12 +182,15 @@ int gridsize;
 double boundingBox;
 double cellInsideValue;
 bool segmentedColor=true;
+int unionValue=0;
+double epsilonForMarchingBounding=0.05;
 std::vector<std::vector<Vector3> > pointsSets;
 std::vector<std::vector<Vector3> > normalsSets;
 std::vector<Poisson_reconstruction_function> functionSets;
-std::vector<Vector3> maxPoints;
-std::vector<Vector3> maxNormals;
+std::vector<Vector3> minPoints;
+std::vector<Vector3> minNormals;
 std::vector<Poisson_reconstruction_function>  originalFunction;
+std::vector<PointForTree> pointForTree;
 // Precompute and keep the grids used by MC algorithm
 struct MCGrid {
     std::vector<Vector3> structuredGrid;
@@ -215,11 +240,11 @@ createGrid(const Vector3& leftCorner,
 
 
 static void
-initMCGrid()
+initMCGrid(double max_x,double min_x,double max_y,double min_y,double max_z,double min_z)
 {
     //std::vector<Vector3> structuredGrid;
-    Vector3 leftCorner(-boundingBox,-boundingBox,-boundingBox);
-    Vector3 rightCorner(boundingBox,boundingBox,boundingBox);
+    Vector3 leftCorner(min_x,min_y,min_z);
+    Vector3 rightCorner(max_x,max_y,max_z);
     mcgrid.subx = gridsize;
     mcgrid.suby = gridsize;
     mcgrid.subz = gridsize;
@@ -290,7 +315,6 @@ void
 Viewer::init(int argc, char** argv)
 {
 #if defined(HRBF) || defined(HRBF_CLOSED)
-    initMCGrid();
 #endif
     
     initGLUT(argc, argv);
@@ -745,6 +769,52 @@ void createVTKFile(const std::string& outFileName,
     out.close();
 }
 
+/*void createVTKFile(const std::string& outFileName,
+                   const POINT3D *m_ppt3dVertices,int m_nVertices,
+                   const unsigned int *m_piTriangleIndices,int m_piTriangleIndices)
+{
+    std::ofstream out(outFileName.c_str());
+    
+    // header
+    out << "# vtk DataFile Version 3.0" << std::endl;
+    out << "vtk output" << std::endl;
+    out << "ASCII" << std::endl;
+    out << "DATASET STRUCTURED_GRID" << std::endl;
+    out << "DIMENSIONS " <<
+
+    out << "POINTS " << m_nVertices << " double" << std::endl;
+    
+    // structured grid
+    double x,y,z;
+    for(int i=0;i<m_nVertices;i++){
+        x=(double)m_ppt3dVertices[i][0];
+        y=(double)m_ppt3dVertices[i][1];
+        z=(double)m_ppt3dVertices[i][2];
+        out << x << " " << y << " " << z << std::endl;
+    }
+    out << std::endl;
+    
+    // data
+    // header
+    out << std::endl;
+    out << "POINT_DATA " << m_nVertices << std::endl;
+    out << "SCALARS Density double" << std::endl;
+    out << "LOOKUP_TABLE default" << std::endl;
+    
+    // data
+    for(int i=0;i<m_nTriangles;i++){
+        std::vector<unsigned> face;
+        face.push_back(m_piTriangleIndices[i*3]);
+        face.push_back(m_piTriangleIndices[i*3+1]);
+        face.push_back(m_piTriangleIndices[i*3+2]);
+        out << m_piTriangleIndices[i*3] << " " << m_piTriangleIndices[i*3+1] << " " << m_piTriangleIndices[i*3+2] << std::endl;
+    }
+    
+    out << std::endl;
+    
+    out.close();
+}*/
+
 void createOFFFile(const std::string& outFileName,std::vector<Vector3>& p, std::vector<Vector3>& n)
 {
     std::vector<Vector3>::const_iterator it;
@@ -897,14 +967,13 @@ void Viewer::colorCoding(std::vector<Point> f){
 Viewer::setMeshFromPolyhedron(SurfaceMesh& output_mesh,
                       TriMesh* meshPtr)
 {
-    std::ofstream out("test.txt");
-    out<<"OFF"<<std::endl;
     typedef typename SurfaceMesh::Vertex_const_iterator VCI;
     typedef typename SurfaceMesh::Facet_const_iterator FCI;
     typedef typename SurfaceMesh::Halfedge_around_facet_const_circulator HFCC;
     
     std::vector<Vec3> vertices;
     std::vector< std::vector<unsigned> > faces;
+    const auto startTime = std::chrono::system_clock::now();
     for (VCI vi = output_mesh.vertices_begin();
          vi != output_mesh.vertices_end();
          ++vi)
@@ -913,15 +982,9 @@ Viewer::setMeshFromPolyhedron(SurfaceMesh& output_mesh,
                CGAL::to_double(vi->point().y()),
                CGAL::to_double(vi->point().z()));
         vertices.push_back(v);
-        out<<"meshed points"<<vi->point()<<std::endl;
 
     }
     
- //   for(int i=0;i<meshPtr->numSeg();i++){
-   //     for(int j=0;j<pointsSets[i].size();j++){
-         //       out<<"pointsSets="<<pointsSets[i][j].x()<<" "<<pointsSets[i][j].y()<<" "<<pointsSets[i][j].z()<<std::endl;
-        //    }
-       // }
 
     typedef CGAL::Inverse_index<VCI> Index;
     Index index(output_mesh.vertices_begin(), output_mesh.vertices_end());
@@ -936,20 +999,49 @@ Viewer::setMeshFromPolyhedron(SurfaceMesh& output_mesh,
         std::vector<Point> fForColorCoding;
         do {
             f.push_back(index[VCI(hc->vertex())]);
-            fForColorCoding.push_back(hc->vertex()->point());
+            //fForColorCoding.push_back(hc->vertex()->point());
             ++hc;
         } while(hc != hc_end);
-        Viewer::colorCoding(fForColorCoding);
-        fForColorCoding.erase(fForColorCoding.begin(),fForColorCoding.end());
+        //Viewer::colorCoding(fForColorCoding);
+        //fForColorCoding.erase(fForColorCoding.begin(),fForColorCoding.end());
         faces.push_back(f);
     }
     std::cout << "# of vertices and faces: " << std::endl;
     std::cout << vertices.size() << std::endl;
     std::cout << faces.size() << std::endl;
-    
+    const auto endTime = std::chrono::system_clock::now();
+    const auto timeSpan = endTime - startTime;
+    std::cout << "setMeshFromPolyhedoron's time:" << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
     meshPtr->setData(vertices, faces);
     //meshPtr->normalize();
 }
+void Viewer::normalize()
+{
+    Vector3 c(0.0,0.0,0.0);
+    int count=0;
+    for(int i=0;i<meshPtr->numSeg();i++){
+        for(int j=0;j<pointsSets[i].size();j++){
+            c += pointsSets[i][j];
+            count++;
+        }
+    }
+    
+    c /= count;
+    for(int i=0;i<meshPtr->numSeg();i++){
+        for(int j=0;j<pointsSets[i].size();j++){
+            pointsSets[i][j] -= c;
+            count++;
+        }
+    }
+    
+    double scale = std::sqrt(meshPtr->computeTotalArea());
+    for(int i=0;i<meshPtr->numSeg();i++){
+        for(int j=0;j<pointsSets[i].size();j++){
+            pointsSets[i][j] /= scale;
+        }
+    }
+}
+
 static void
 setMeshFromPolyhedron(Polyhedron2& output_mesh,TriMesh* meshPtr)
 {
@@ -1061,6 +1153,15 @@ void Viewer::read(const char* filename){
         }
         if(token=="bounding_box_size"){
             ss>>boundingBox;
+            continue;
+        }
+        
+        if(token=="union(R-function=0,min=1,mymin=2)"){
+            ss>>unionValue;
+            continue;
+        }
+        if(token=="epsilonForMarchingBounding"){
+            ss>>epsilonForMarchingBounding;
             continue;
         }
     }
@@ -1255,7 +1356,94 @@ Poisson_reconstruction_function Poisson_reconstruction(std::vector<Vector3>& poi
     
     return function;
 }
+Poisson_reconstruction_function Poisson_reconstruction(TriMesh* mesh){
+    
+    std::vector<PointVectorPair> points;
+    for (unsigned i = 0; i < mesh->numVerts(); ++i) {
+        Vec3 v = mesh->getVertPos(i);
+        Point p(v.x, v.y, v.z);
+        Vector tmp(0,0,0);
+        points.push_back(std::make_pair(p, tmp));
+    }
 
+    
+    CGAL::pca_estimate_normals<Concurrency_tag>(points.begin(), points.end(), CGAL::First_of_pair_property_map<PointVectorPair>(), CGAL::Second_of_pair_property_map<PointVectorPair>(), 18);
+    std::vector<PointVectorPair>::iterator unoriented_points_begin =
+    CGAL::mst_orient_normals(points.begin(), points.end(),
+                             CGAL::First_of_pair_property_map<PointVectorPair>(),
+                             CGAL::Second_of_pair_property_map<PointVectorPair>(),
+                             18);
+    
+    points.erase(unoriented_points_begin, points.end());
+    
+    PointNormalList pwn;
+
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        Point pt(points[i].first);
+        Vector nm(points[i].second);
+        Point_with_normal_3 pn(pt, nm);
+        pwn.push_back(pn);
+    }
+
+
+    
+    Poisson_reconstruction_function
+    function(pwn.begin(), pwn.end(),
+             CGAL::make_normal_of_point_with_normal_pmap(PointList::value_type()));
+        std::cout<<"mesh->numVerts="<<mesh->numVerts()<<std::endl;
+    //if (!function.compute_implicit_function())exit(EXIT_FAILURE);
+            std::cout<<"mesh->numVerts="<<mesh->numVerts()<<std::endl;
+        return function;
+}
+
+void create_extra_points(TriMesh& mesh, std::vector<Point>& extra_points) {
+    
+    std::vector<PointVectorPair> points;
+    for (unsigned i = 0; i < mesh.numVerts(); ++i) {
+        Vec3 v = mesh.getVertPos(i);
+        Point p(v.x, v.y, v.z);
+        Vector tmp(0,0,0);
+        points.push_back(std::make_pair(p, tmp));
+    }
+    
+    CGAL::pca_estimate_normals<Concurrency_tag>(points.begin(), points.end(), CGAL::First_of_pair_property_map<PointVectorPair>(), CGAL::Second_of_pair_property_map<PointVectorPair>(), 18);
+    
+    std::vector<PointVectorPair>::iterator unoriented_points_begin =
+    CGAL::mst_orient_normals(points.begin(), points.end(),
+                             CGAL::First_of_pair_property_map<PointVectorPair>(),
+                             CGAL::Second_of_pair_property_map<PointVectorPair>(),
+                             18);
+    
+    points.erase(unoriented_points_begin, points.end());
+    
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        Point pt(points[i].first);
+        Vector nm(points[i].second);
+        Point pt2(pt.x() + nm.x()*5.0, pt.y() + nm.y()*5.0, pt.z() + nm.z());
+        extra_points.push_back(pt2);
+    }
+    
+}
+
+
+
+
+void Viewer::MarchingCubesForEachFunction(){
+    const auto startTime = std::chrono::system_clock::now();
+    mcgrid.results.erase(mcgrid.results.begin(),mcgrid.results.end());
+    for(int count=0;count<functionSets.size();count++){
+    for (size_t i = 0; i < mcgrid.structuredGrid.size(); ++i) {
+        mcgrid.results.push_back(functionSets[count](Point(mcgrid.structuredGrid[i](0),mcgrid.structuredGrid[i](1),mcgrid.structuredGrid[i](2))));
+    }
+        char filename[20];
+        snprintf(filename,sizeof(filename),"MC_poisson+%d.vtk",count);
+    createVTKFile(filename,mcgrid.subx,mcgrid.suby,mcgrid.subz,mcgrid.structuredGrid,mcgrid.results);
+    std::cout<<"drawed"<<std::endl;
+                std::cout<<"mcgrid.results.size()="<<mcgrid.results.size()<<std::endl;
+        mcgrid.results.erase(mcgrid.results.begin(),mcgrid.results.end());
+        std::cout<<"mcgrid.results.size()="<<mcgrid.results.size()<<std::endl;
+    }
+}
 void fill_poly_1(Polyhedron2& poly)
 {
     std::ifstream input("out.off");
@@ -1308,11 +1496,11 @@ void Viewer::initSeg(){
         std::cout<<"meshPtr->numSeg()"<<i<<std::endl;
         std::pair<std::multimap<int,Point>::iterator, std::multimap<int,Point>::iterator> p = meshPtr->getEqual_range(i);
         for(std::multimap<int,Point>::iterator it = p.first;it!=p.second;it++){
-            std::cout<<"segpoints[i]="<<it->second<<std::endl;
+            //std::cout<<"segpoints[i]="<<it->second<<std::endl;
             
             settmp.insert(it->second);
         }
-        // segPoints.push_back(settmp);
+        //segPoints.push_back(settmp);
         
         
         for(auto itr=settmp.begin();itr!=settmp.end();itr++){
@@ -1340,6 +1528,19 @@ void Viewer::initSeg(){
         settmp.erase(settmp.begin(),settmp.end());
     }
     
+    for(int i=0;i<meshPtr->numSeg();i++){
+        for(int j=0;j<pointsSets[i].size();j++){
+            PointForTree pointtree;
+            pointtree.vec[0]=pointsSets[i][j].x();
+            pointtree.vec[1]=pointsSets[i][j].y();
+            pointtree.vec[2]=pointsSets[i][j].z();
+            pointtree.seg=i;
+            pointtree.normalX=normalsSets[i][j].x();
+            pointtree.normalY=normalsSets[i][j].y();
+            pointtree.normalZ=normalsSets[i][j].z();
+            pointForTree.push_back(pointtree);
+        }
+    }
     std::vector<Vector3> pointsVector3;
     std::vector<Vector3> normalsVector3;
     for(int i=0;i<meshPtr->numSeg();i++){
@@ -1355,23 +1556,23 @@ void Viewer::initSeg(){
     for(int i=0;i<meshPtr->numSeg();i++){
         for(int j=0;j<pointsSets[i].size();j++){
             std::cout<<"func="<<functionSets[i](Point(pointsSets[i][j].x(),pointsSets[i][j].y(),pointsSets[i][j].z()))<<std::endl;
-            if(functionSets[i](Point(pointsSets[i][j].x(),pointsSets[i][j].y(),pointsSets[i][j].z()))>=0){
+            if(functionSets[i](Point(pointsSets[i][j].x(),pointsSets[i][j].y(),pointsSets[i][j].z()))<=0){
                 
-                maxPoints.push_back(pointsSets[i][j]);
-                maxNormals.push_back(normalsSets[i][j]);
+                minPoints.push_back(pointsSets[i][j]);
+                minNormals.push_back(normalsSets[i][j]);
             }
         }
     }
-    std::cout<<"maxpoints="<<maxPoints.size()<<std::endl;
+    std::cout<<"minpoints="<<minPoints.size()<<std::endl;
     
     std::vector<Point> points3;
-    for(unsigned i=0; i<maxPoints.size(); i++){
-        points3.push_back(Point(maxPoints[i].x(), maxPoints[i].y(),
-                                maxPoints[i].z()));
+    for(unsigned i=0; i<minPoints.size(); i++){
+        points3.push_back(Point(minPoints[i].x(), minPoints[i].y(),
+                                minPoints[i].z()));
     }
     
     double averagespacing = CGAL::compute_average_spacing<Concurrency_tag>(points3.begin(), points3.end(),CGAL::Identity_property_map<Point>() ,nb_neighbors2);
-    originalFunction.push_back(Poisson_reconstruction(maxPoints,maxNormals,meshPtr));
+    originalFunction.push_back(Poisson_reconstruction(minPoints,minNormals,meshPtr));
 }
 
 
@@ -1382,6 +1583,7 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
      PointList vertices;
     std::vector<PointVectorPair> points;
     int selectedSeg;
+    //const unsigned int K=1;
     double selected_x = selected_point.x;
     double selected_y = selected_point.y;
     double selected_z = selected_point.z;
@@ -1390,7 +1592,10 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
     double normal_y = selected_normal.y;
     double normal_z = selected_normal.z;
     double distance,disp;
+
     std::vector<Vec3> vec3Points;
+
+    
     meshPtr->returnVertposi();
     for(unsigned i=0;i<meshPtr->numVerts();i++){
         Vec3 p_neighbor = meshPtr->getVertPos(i);
@@ -1398,20 +1603,48 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
     }
     meshPtr->replacePoints(vec3Points);
     meshPtr->makeMap();
-    std::cout<<"maxpoints="<<maxPoints.size()<<std::endl;
+    std::cout<<"minpoints="<<minPoints.size()<<std::endl;
     
     std::vector<Point> points3;
-    for(unsigned i=0; i<maxPoints.size(); i++){
-        points3.push_back(Point(maxPoints[i].x(), maxPoints[i].y(),
-                                maxPoints[i].z()));
+    for(unsigned i=0; i<minPoints.size(); i++){
+        points3.push_back(Point(minPoints[i].x(), minPoints[i].y(),
+                                minPoints[i].z()));
     }
+    pointForTree.erase(pointForTree.begin(),pointForTree.end());
     for(int i=0;i<meshPtr->numSeg();i++){
         for(int j=0;j<pointsSets[i].size();j++){
-            if(pointsSets[i][j].x()==selected_x&&pointsSets[i][j].y()==selected_y&&pointsSets[i][j].z()==selected_z){
-                selectedSeg=i;
-            }
+            PointForTree pointtree;
+            pointtree.vec[0]=pointsSets[i][j].x();
+            pointtree.vec[1]=pointsSets[i][j].y();
+            pointtree.vec[2]=pointsSets[i][j].z();
+            pointtree.seg=i;
+            pointtree.normalX=normalsSets[i][j].x();
+            pointtree.normalY=normalsSets[i][j].y();
+            pointtree.normalZ=normalsSets[i][j].z();
+            pointForTree.push_back(pointtree);
         }
     }
+    Tree tree(pointForTree.begin(),pointForTree.end());
+    PointForTree query(selected_x,selected_y,selected_z);
+    K_neighbor_search search(tree,query);
+    K_neighbor_search::iterator it = search.begin();
+    selectedSeg=it->first.getSeg();
+    selected_x = it->first.x();
+    selected_y = it->first.y();
+    selected_z = it->first.z();
+    
+    normal_x = it->first.normx();
+    normal_y = it->first.normy();
+    normal_z = it->first.normz();
+
+
+ //   for(int i=0;i<meshPtr->numSeg();i++){
+   //     for(int j=0;j<pointsSets[i].size();j++){
+     //       if(pointsSets[i][j].x()==selected_x&&pointsSets[i][j].y()==selected_y&&pointsSets[i][j].z()==selected_z){
+    //selectedSeg=i;
+           // }
+       // }
+   // }
                 std::cout<<"selected seg"<<selectedSeg<<std::endl;
     for(int i=0;i<pointsSets[selectedSeg].size();i++){
         if(deformationSwitch==true){
@@ -1432,6 +1665,16 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
             pointsSets[selectedSeg][i].x()=pointsSets[selectedSeg][i].x()+disp*normal_x;
             pointsSets[selectedSeg][i].y()=pointsSets[selectedSeg][i].y()+disp*normal_y;
             pointsSets[selectedSeg][i].z()=pointsSets[selectedSeg][i].z()+disp*normal_z;
+            PointForTree pointtree;
+            pointtree.vec[0]=pointsSets[selectedSeg][i].x();
+            pointtree.vec[1]=pointsSets[selectedSeg][i].y();
+            pointtree.vec[2]=pointsSets[selectedSeg][i].z();
+            pointtree.seg=i;
+            pointtree.normalX=normalsSets[selectedSeg][i].x();
+            pointtree.normalY=normalsSets[selectedSeg][i].y();
+            pointtree.normalZ=normalsSets[selectedSeg][i].z();
+            pointForTree.push_back(pointtree);
+            
         }
         else{
             Point p(pointsSets[selectedSeg][i].x(),
@@ -1471,28 +1714,64 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
         points2.push_back(p_tmp);
         normals2.push_back(n_tmp);
     }
+    
 
+    
     Poisson_reconstruction_function function1=Poisson_reconstruction(points2,normals2,meshPtr);
     functionSets[selectedSeg]=function1;
     implicit_function_csg csgFunction(functionSets);
+    implicit_function_min minFunction(functionSets);
     
     for(int i=0;i<points2.size();i++){
-            if(function1(Point(points2[i].x(),points2[i].y(),points2[i].z()))>=0){
-                maxPoints.push_back(points2[i]);
-                maxNormals.push_back(normals2[i]);
+            if(function1(Point(points2[i].x(),points2[i].y(),points2[i].z()))<=0){
+                minPoints.push_back(points2[i]);
+                minNormals.push_back(normals2[i]);
         }
     }
+    //Compute bounding box
+    double max_x=minPoints[0].x(),min_x=minPoints[0].x(),max_y=minPoints[0].y(),min_y=minPoints[0].y(),max_z=minPoints[0].z(),min_z=minPoints[0].z();
+    for(int i=0;i<minPoints.size();i++){
+        if(max_x<minPoints[i].x())max_x=minPoints[i].x();
+        if(min_x>minPoints[i].x())min_x=minPoints[i].x();
+        if(max_y<minPoints[i].y())max_y=minPoints[i].y();
+        if(min_y>minPoints[i].y())min_y=minPoints[i].y();
+        if(max_z<minPoints[i].z())max_z=minPoints[i].z();
+        if(min_z>minPoints[i].z())min_z=minPoints[i].z();
+    }
+    double e=epsilonForMarchingBounding;
+    max_x=max_x+max_x*e;
+    min_x=min_x+min_x*e;
+    max_y=max_y+max_y*e;
+    min_y=min_y+min_y*e;
+    max_z=max_z+max_z*e;
+    min_z=min_z+min_z*e;
+    std::cout<<"max_x="<<max_x<<", min_x="<<min_x<<"max_y="<<max_y<<", min_y="<<min_y<<"max_z="<<max_z<<", min_z="<<min_z<<std::endl;
+    initMCGrid(max_x,min_x,max_y,min_y,max_z,min_z);
+    
+    //MarchingCubesForEachFunction();
 
-    Poisson_reconstruction_function function2=Poisson_reconstruction(maxPoints,maxNormals,meshPtr);
+    Poisson_reconstruction_function function2=Poisson_reconstruction(minPoints,minNormals,meshPtr);
+
     double averagespacing = CGAL::compute_average_spacing<Concurrency_tag>(points3.begin(), points3.end(),CGAL::Identity_property_map<Point>() ,nb_neighbors2);
-
     SurfaceMesh output_mesh;
+    
+
     if(mesher==0){
+        normalize();
             const auto startTime = std::chrono::system_clock::now();
             std::cout<<"Marching start"<<std::endl;
             for (size_t i = 0; i < mcgrid.structuredGrid.size(); ++i) {
-                mcgrid.results[i] = CGAL::to_double(csgFunction(Point(mcgrid.structuredGrid[i](0),mcgrid.structuredGrid[i](1),mcgrid.structuredGrid[i](2))));
-                std::cout<<"marching "<<mcgrid.results[i]<<std::endl;
+                if(unionValue==0){
+                mcgrid.results[i]=csgFunction(Point(mcgrid.structuredGrid[i](0),mcgrid.structuredGrid[i](1),mcgrid.structuredGrid[i](2)));
+                //    std::cout<<"Point="<<mcgrid.structuredGrid[i](0)<<" "<<mcgrid.structuredGrid[i](1)<<" "<<mcgrid.structuredGrid[i](2)<<" "<<"unionValue="<<mcgrid.results[i]<<std::endl;
+                }
+                else if(unionValue==1){
+                    mcgrid.results[i]=minFunction(Point(mcgrid.structuredGrid[i](0),mcgrid.structuredGrid[i](1),mcgrid.structuredGrid[i](2)));
+                }
+                else if(unionValue==2){
+                    mcgrid.results[i]=function2(Point(mcgrid.structuredGrid[i](0),mcgrid.structuredGrid[i](1),mcgrid.structuredGrid[i](2)));
+                }
+               //std::cout<<"marching "<<mcgrid.results[i]<<std::endl;
             }
             double *resultarray= new double[mcgrid.results.size()];
             for(unsigned int i=0;i<mcgrid.results.size();i++){
@@ -1509,39 +1788,87 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
             meshPtr->setData(ciso->m_ppt3dVertices, ciso->m_nVertices,
                              ciso->m_piTriangleIndices, ciso->m_nTriangles);
             //meshPtr->normalize();
-            
+        createVTKFile("MC_poisson_CSG.vtk",mcgrid.subx,mcgrid.suby,mcgrid.subz,mcgrid.structuredGrid,mcgrid.results);
             createOFFFile2("out.off");
+        std::cout<<"drawed"<<std::endl;
             //createOBJFile_marching("out.obj");
         segmentedColor=false;
 
         
     }
     else if(mesher==1){
+        float eps=0;
+        Poisson_reconstruction_function fun = Poisson_reconstruction(meshPtr);
+        std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+
+        Point ip = fun.get_inner_point();
+        Sphere bs = fun.bounding_sphere();
+        FT r = std::sqrt(bs.squared_radius());
+        r = 2.0*r;
         const auto startTime = std::chrono::system_clock::now();
         
         std::cout<<"Our delaunay start"<<std::endl;
         
         Delaunay dl;
         
-        for (std::size_t i = 0; i < maxPoints.size(); ++i) {
-            dl.insert(Delaunay::Point(maxPoints[i].x(), maxPoints[i].y(),maxPoints[i].z()));
+        for (std::size_t i = 0; i < minPoints.size(); ++i) {
+            dl.insert(Delaunay::Point(minPoints[i].x(), minPoints[i].y(),minPoints[i].z()));
         }
-        Cell_inside<Delaunay, implicit_function_csg> cellin(dl, csgFunction,cellInsideValue);
-        Surface_builder<Delaunay, Cell_inside<Delaunay, implicit_function_csg>, SurfaceMesh> b(dl, cellin);
-        output_mesh.delegate(b);
+        dl.insert(Delaunay::Point(ip.x()+r, ip.y(), ip.z()));
+        dl.insert(Delaunay::Point(ip.x()-r, ip.y(), ip.z()));
+        dl.insert(Delaunay::Point(ip.x(), ip.y()+r, ip.z()));
+        dl.insert(Delaunay::Point(ip.x(), ip.y()-r, ip.z()));
+        dl.insert(Delaunay::Point(ip.x(), ip.y(), ip.z()+r));
+        dl.insert(Delaunay::Point(ip.x(), ip.y(), ip.z()-r));
+        
+        Cell_inside<Delaunay, implicit_function_min> cellin(dl, minFunction,eps);
+       // Surface_builder<Delaunay, Cell_inside<Delaunay, implicit_function_csg>, SurfaceMesh> b(dl, cellin);
+         Surface_builder_dual<Delaunay, implicit_function_min, Cell_inside<Delaunay, implicit_function_min>, SurfaceMesh> b(dl, minFunction, cellin);
+        //output_mesh.delegate(b);
+        output_mesh = b.get_polyhedron();
+
+        if(resamplingSwitch==1){
+            /*Delaunay dl2=resampling(output_mesh,meshPtr,averagespacing,dl);
+            Cell_inside<Delaunay, implicit_function_csg> cellin2(dl2, csgFunction,cellInsideValue);
+            Surface_builder<Delaunay, Cell_inside<Delaunay, implicit_function_csg>, SurfaceMesh> b2(dl2, cellin2);
+            output_mesh.delegate(b2);*/
+            std::vector<SurfaceMesh::Facet_handle>  new_facets;
+            std::vector<polyVertex_handle> new_vertices;
+            CGAL::Polygon_mesh_processing::refine(output_mesh,
+                                                  faces(output_mesh),
+                                                  std::back_inserter(new_facets),
+                                                  std::back_inserter(new_vertices),
+                                                  CGAL::Polygon_mesh_processing::parameters::density_control_factor(2.));
+
+            typedef typename SurfaceMesh::Vertex_const_iterator VCI;
+            std::vector<Vec3> vertices;
+            Delaunay dl2;
+            for (VCI vi = output_mesh.vertices_begin();vi != output_mesh.vertices_end();++vi){
+                dl2.insert(Delaunay::Point(CGAL::to_double(vi->point().x()),
+                       CGAL::to_double(vi->point().y()),
+                       CGAL::to_double(vi->point().z())));
+            }
+            Cell_inside<Delaunay, implicit_function_min> cellin2(dl2, minFunction,cellInsideValue);
+            Surface_builder<Delaunay, Cell_inside<Delaunay, implicit_function_min>, SurfaceMesh> b2(dl2, cellin2);
+            output_mesh.delegate(b2);
+            BOOST_FOREACH(SurfaceMesh::Halfedge_handle h, halfedges(output_mesh)){
+                if(h->is_border())
+                {
+                    std::vector<SurfaceMesh::Facet_handle>  patch_facets;
+                    std::vector<polyVertex_handle> patch_vertices;
+                    bool success = CGAL::cpp11::get<0>(CGAL::Polygon_mesh_processing::triangulate_refine_and_fair_hole(output_mesh,h,std::back_inserter(patch_facets),std::back_inserter(patch_vertices),CGAL::Polygon_mesh_processing::parameters::vertex_point_map(get(CGAL::vertex_point, output_mesh)).geom_traits(Kernel())) );
+        }
+            }
+        }
         const auto endTime = std::chrono::system_clock::now();
         const auto timeSpan = endTime - startTime;
         std::cout << "Our Delaunay's time:" << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
-        if(resamplingSwitch==1){
-            Delaunay dl2=resampling(output_mesh,meshPtr,averagespacing,dl);
-            Cell_inside<Delaunay, Poisson_reconstruction_function> cellin2(dl2, function2,cellInsideValue);
-            Surface_builder<Delaunay, Cell_inside<Delaunay, Poisson_reconstruction_function>, SurfaceMesh> b2(dl2, cellin2);
-            output_mesh.delegate(b2);
-        }
         setMeshFromPolyhedron(output_mesh, meshPtr);
         segmentedColor=false;
+        createOFFFileForPolyhedron("OurDelaunay.off",output_mesh);
     }
     else if(mesher==2){
+        /*
     const auto startTime = std::chrono::system_clock::now();
     std::cout<<"CGAL's delaunay start"<<std::endl;
     Point inner_point = function2.get_inner_point();
@@ -1572,6 +1899,29 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
 
     std::cout<<"meshPtr->colors size="<<meshPtr->colors.size()<<std::endl;
      segmentedColor=false;
+         */
+        const auto startTime = std::chrono::system_clock::now();
+        std::cout<<"CGAL's delaunay start"<<std::endl;
+        PointList pt;
+        for(std::size_t i=0;i<points2.size();i++){
+            pt.push_back(Point(minPoints[i].x(), minPoints[i].y(),minPoints[i].z()));
+        }
+        Min_sphere  ms (pt.begin(), pt.end());
+        FT sm_sphere_radius = 5.0 * 5.0;
+        FT sm_dichotomy_error = sm_distance*averagespacing/1000.0; // Dichotomy error must be << sm_distance
+        Surface_3_min surface(minFunction,Sphere(ms.center(),ms.squared_radius()*1.5));
+        CGAL::Surface_mesh_default_criteria_3<STr>
+        criteria(sm_angle, sm_radius*averagespacing, sm_distance*averagespacing);
+        STr tr;
+        tr.insert(vertices.begin(), vertices.end());
+        C2t3 c2t3(tr);
+        CGAL::make_surface_mesh(c2t3,surface,criteria,CGAL::Manifold_with_boundary_tag());
+        CGAL::output_surface_facets_to_polyhedron(c2t3, output_mesh);
+        const auto endTime = std::chrono::system_clock::now();
+        const auto timeSpan = endTime - startTime;
+        std::cout << "Delaunay(CGAL)'s time:" << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
+         setMeshFromPolyhedron(output_mesh, meshPtr);
+        segmentedColor=false;
     }
 }
 /*

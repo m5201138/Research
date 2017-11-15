@@ -5,7 +5,6 @@
 #include "TriMesh.h"
 
 
-
 bool parseCmdLine(int argc, char** argv, 
                   char* & meshFile, 
                   double& scale,
@@ -63,7 +62,6 @@ int main(int argc, char** argv)
     char*  meshFile = 0;
     double scale    = 1.0;
     if (!parseCmdLine(argc, argv, meshFile, scale, verbose)) return 0;
-
     TriMesh* mesh=new TriMesh;
     mesh->read(meshFile);
     mesh->createOFFFile("mesh.off");
@@ -74,6 +72,7 @@ int main(int argc, char** argv)
     viewer.read("config.txt");
     viewer.meshPtr = mesh;
     viewer.initSeg();
+    viewer.normalize();
     viewer.verbose = verbose;
     viewer.clearData();
     viewer.init(argc,argv);

@@ -32,12 +32,14 @@ if ( CGAL_FOUND )
 include( ${CGAL_USE_FILE} )
 
   include( CGAL_CreateSingleSourceCGALProgram )
-
-  find_package(Eigen3 3.1.0)
+ find_package(Eigen3 3.1.0)
   if (EIGEN3_FOUND)
      include( ${EIGEN3_USE_FILE} )
   else()
      message(STATUS "NOTICE: some of the executables in this directory need Eigen 3.1 (or greater)")
+
+
+  
   endif()
 else()
   
@@ -65,11 +67,31 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wextra -Wno-unused-parameter -Wno-u
 include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
-
-
+	 
 if(APPLE)
     set(CMAKE_SHARED_LIBRARY_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CXX_FLAGS} -framework Accelerate")
 endif(APPLE)
 
 add_executable(${PROJECT_NAME} ${SRCS})
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

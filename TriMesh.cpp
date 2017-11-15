@@ -188,10 +188,10 @@ void TriMesh::normalize()
 }
 
 void TriMesh::setData(POINT3D *m_ppt3dVertices ,int m_nVertices,unsigned int *m_piTriangleIndices,int m_nTriangles){
-    
+    const auto startTime = std::chrono::system_clock::now();
+    std::cout<<"setData start"<<std::endl;
     mPoints.clear();
     mFaceToVert.clear();
-    
     double x,y,z;
     for(int i=0;i<m_nVertices;i++){
         x=(double)m_ppt3dVertices[i][0];
@@ -206,10 +206,15 @@ void TriMesh::setData(POINT3D *m_ppt3dVertices ,int m_nVertices,unsigned int *m_
         face.push_back(m_piTriangleIndices[i*3+1]);
         face.push_back(m_piTriangleIndices[i*3+2]);
         mFaceToVert.push_back(face);
+ 
         // std::cout<<mFaceToVert[i][0]<<std::endl;
     }
+           normalize();
     std::cout<<"number of points: "<<mPoints.size()<<std::endl;
     std::cout<<"number of faces: "<<mFaceToVert.size()<<std::endl;
+    const auto endTime = std::chrono::system_clock::now();
+    const auto timeSpan = endTime - startTime;
+    std::cout << "setData's time:" << std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count() << "[ms]" << std::endl;
 }
 
 
@@ -347,6 +352,24 @@ void TriMesh::segmentation(void){
             colors.push_back(0.5);
             colors.push_back(1.0);
             colors.push_back(0.0);
+        }
+        else if(segment_property_map[fi]==10){
+            out<<" "<<std::fixed<<0.5f<<" "<<std::fixed<<1.0f<<" "<<std::fixed<<0.0f;
+            colors.push_back(0.5);
+            colors.push_back(1.0);
+            colors.push_back(1.0);
+        }
+        else if(segment_property_map[fi]==11){
+            out<<" "<<std::fixed<<0.5f<<" "<<std::fixed<<1.0f<<" "<<std::fixed<<0.0f;
+            colors.push_back(1.0);
+            colors.push_back(0.5);
+            colors.push_back(1.0);
+        }
+        else if(segment_property_map[fi]==12){
+            out<<" "<<std::fixed<<0.5f<<" "<<std::fixed<<1.0f<<" "<<std::fixed<<0.0f;
+            colors.push_back(1.0);
+            colors.push_back(1.0);
+            colors.push_back(0.5);
         }
         out<<std::endl;
     }

@@ -71,6 +71,8 @@ public:
     void initSeg();
     static void colorCoding(std::vector<Point>);
     static void setMeshFromPolyhedron(SurfaceMesh& output_mesh,TriMesh* meshPtr);
+    static void MarchingCubesForEachFunction();
+    static void normalize();
 };
 
 #endif // VIEWER_H
