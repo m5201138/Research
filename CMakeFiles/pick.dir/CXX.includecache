@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/Users/m5201138/Research/Build_surface.h
+/Users/m5201138/Desktop/Research-master/Build_surface.h
 CGAL/Polyhedron_incremental_builder_3.h
 -
 CGAL/Polyhedron_3.h
@@ -26,25 +26,25 @@ algorithm
 iterator
 -
 
-/Users/m5201138/Research/CIsoSurface.cpp
+/Users/m5201138/Desktop/Research-master/CIsoSurface.cpp
 stdio.h
 -
 math.h
 -
 CIsoSurface.h
-/Users/m5201138/Research/CIsoSurface.h
+/Users/m5201138/Desktop/Research-master/CIsoSurface.h
 
-/Users/m5201138/Research/CIsoSurface.h
+/Users/m5201138/Desktop/Research-master/CIsoSurface.h
 map
 -
 vector
 -
 Vectors.h
-/Users/m5201138/Research/Vectors.h
+/Users/m5201138/Desktop/Research-master/Vectors.h
 
-/Users/m5201138/Research/Camera.cpp
+/Users/m5201138/Desktop/Research-master/Camera.cpp
 Camera.h
-/Users/m5201138/Research/Camera.h
+/Users/m5201138/Desktop/Research-master/Camera.h
 OpenGL/gl.h
 -
 GLUT/glut.h
@@ -54,17 +54,17 @@ GL/gl.h
 GL/glut.h
 -
 
-/Users/m5201138/Research/Camera.h
+/Users/m5201138/Desktop/Research-master/Camera.h
 Quaternion.h
-/Users/m5201138/Research/Quaternion.h
+/Users/m5201138/Desktop/Research-master/Quaternion.h
 
-/Users/m5201138/Research/Cell_inside.h
+/Users/m5201138/Desktop/Research-master/Cell_inside.h
 CGAL/centroid.h
 -
 
-/Users/m5201138/Research/Distance.h
+/Users/m5201138/Desktop/Research-master/Distance.h
 
-/Users/m5201138/Research/HRBF_closed.h
+/Users/m5201138/Desktop/Research-master/HRBF_closed.h
 vector
 -
 algorithm
@@ -82,7 +82,7 @@ eigen/Eigen/Cholesky
 CGAL/Implicit_surface_3.h
 -
 
-/Users/m5201138/Research/Image.cpp
+/Users/m5201138/Desktop/Research-master/Image.cpp
 cmath
 -
 cstdlib
@@ -92,29 +92,29 @@ fstream
 iostream
 -
 Image.h
-/Users/m5201138/Research/Image.h
+/Users/m5201138/Desktop/Research-master/Image.h
 
-/Users/m5201138/Research/Image.h
+/Users/m5201138/Desktop/Research-master/Image.h
 vector
 -
 string
 -
 
-/Users/m5201138/Research/Point3.h
+/Users/m5201138/Desktop/Research-master/Point3.h
 
-/Users/m5201138/Research/Quaternion.h
+/Users/m5201138/Desktop/Research-master/Quaternion.h
 cmath
 -
 
-/Users/m5201138/Research/Shader.cpp
+/Users/m5201138/Desktop/Research-master/Shader.cpp
 Shader.h
-/Users/m5201138/Research/Shader.h
+/Users/m5201138/Desktop/Research-master/Shader.h
 fstream
 -
 iostream
 -
 
-/Users/m5201138/Research/Shader.h
+/Users/m5201138/Desktop/Research-master/Shader.h
 GLUT/glut.h
 -
 OpenGL/gl.h
@@ -130,7 +130,7 @@ GL/glext.h
 string
 -
 
-/Users/m5201138/Research/Surface_builder.h
+/Users/m5201138/Desktop/Research-master/Surface_builder.h
 CGAL/Modifier_base.h
 -
 CGAL/Polyhedron_incremental_builder_3.h
@@ -144,7 +144,7 @@ stack
 utility
 -
 
-/Users/m5201138/Research/Surface_builder_dual.h
+/Users/m5201138/Desktop/Research-master/Surface_builder_dual.h
 CGAL/Modifier_base.h
 -
 CGAL/Polyhedron_incremental_builder_3.h
@@ -162,11 +162,11 @@ stack
 utility
 -
 
-/Users/m5201138/Research/TriMesh.cpp
+/Users/m5201138/Desktop/Research-master/TriMesh.cpp
 TriMesh.h
-/Users/m5201138/Research/TriMesh.h
+/Users/m5201138/Desktop/Research-master/TriMesh.h
 Triangle.h
-/Users/m5201138/Research/Triangle.h
+/Users/m5201138/Desktop/Research-master/Triangle.h
 CGAL/Exact_predicates_inexact_constructions_kernel.h
 -
 CGAL/boost/graph/graph_traits_Polyhedron_3.h
@@ -194,13 +194,13 @@ iostream
 cassert
 -
 
-/Users/m5201138/Research/TriMesh.h
+/Users/m5201138/Desktop/Research-master/TriMesh.h
 types.h
-/Users/m5201138/Research/types.h
+/Users/m5201138/Desktop/Research-master/types.h
 vector
 -
 Vectors.h
-/Users/m5201138/Research/Vectors.h
+/Users/m5201138/Desktop/Research-master/Vectors.h
 CGAL/Exact_predicates_inexact_constructions_kernel.h
 -
 CGAL/boost/graph/graph_traits_Polyhedron_3.h
@@ -214,21 +214,21 @@ CGAL/property_map.h
 CGAL/Polyhedron_3.h
 -
 
-/Users/m5201138/Research/Triangle.h
+/Users/m5201138/Desktop/Research-master/Triangle.h
 types.h
-/Users/m5201138/Research/types.h
+/Users/m5201138/Desktop/Research-master/types.h
 cmath
 -
 
-/Users/m5201138/Research/Vectors.cpp
+/Users/m5201138/Desktop/Research-master/Vectors.cpp
 Vectors.h
-/Users/m5201138/Research/Vectors.h
+/Users/m5201138/Desktop/Research-master/Vectors.h
 stdio.h
 -
 
-/Users/m5201138/Research/Vectors.h
+/Users/m5201138/Desktop/Research-master/Vectors.h
 
-/Users/m5201138/Research/Viewer.cpp
+/Users/m5201138/Desktop/Research-master/Viewer.cpp
 CGAL/Exact_predicates_inexact_constructions_kernel.h
 -
 CGAL/Exact_predicates_exact_constructions_kernel.h
@@ -248,31 +248,31 @@ eigen/Eigen/Core
 cmath
 -
 hrbf_core.h
-/Users/m5201138/Research/hrbf_core.h
+/Users/m5201138/Desktop/Research-master/hrbf_core.h
 hrbf_phi_funcs.h
-/Users/m5201138/Research/hrbf_phi_funcs.h
+/Users/m5201138/Desktop/Research-master/hrbf_phi_funcs.h
 CIsoSurface.h
-/Users/m5201138/Research/CIsoSurface.h
+/Users/m5201138/Desktop/Research-master/CIsoSurface.h
 Vectors.h
-/Users/m5201138/Research/Vectors.h
+/Users/m5201138/Desktop/Research-master/Vectors.h
 implicit_function_hrbf.h
-/Users/m5201138/Research/implicit_function_hrbf.h
+/Users/m5201138/Desktop/Research-master/implicit_function_hrbf.h
 implicit_function_crbf.h
-/Users/m5201138/Research/implicit_function_crbf.h
+/Users/m5201138/Desktop/Research-master/implicit_function_crbf.h
 HRBF_closed.h
-/Users/m5201138/Research/HRBF_closed.h
+/Users/m5201138/Desktop/Research-master/HRBF_closed.h
 Build_surface.h
-/Users/m5201138/Research/Build_surface.h
+/Users/m5201138/Desktop/Research-master/Build_surface.h
 Cell_inside.h
-/Users/m5201138/Research/Cell_inside.h
+/Users/m5201138/Desktop/Research-master/Cell_inside.h
 Surface_builder.h
-/Users/m5201138/Research/Surface_builder.h
+/Users/m5201138/Desktop/Research-master/Surface_builder.h
 implicit_function_csg.h
-/Users/m5201138/Research/implicit_function_csg.h
+/Users/m5201138/Desktop/Research-master/implicit_function_csg.h
 implicit_function_min.h
-/Users/m5201138/Research/implicit_function_min.h
+/Users/m5201138/Desktop/Research-master/implicit_function_min.h
 Surface_builder_dual.h
-/Users/m5201138/Research/Surface_builder_dual.h
+/Users/m5201138/Desktop/Research-master/Surface_builder_dual.h
 utility
 -
 fstream
@@ -336,9 +336,9 @@ CGAL/Search_traits.h
 CGAL/Orthogonal_k_neighbor_search.h
 -
 Point3.h
-/Users/m5201138/Research/Point3.h
+/Users/m5201138/Desktop/Research-master/Point3.h
 Distance.h
-/Users/m5201138/Research/Distance.h
+/Users/m5201138/Desktop/Research-master/Distance.h
 CGAL/Exact_predicates_inexact_constructions_kernel.h
 -
 CGAL/Polygon_mesh_processing/refine.h
@@ -360,11 +360,11 @@ cassert
 limits
 -
 Viewer.h
-/Users/m5201138/Research/Viewer.h
+/Users/m5201138/Desktop/Research-master/Viewer.h
 Image.h
-/Users/m5201138/Research/Image.h
+/Users/m5201138/Desktop/Research-master/Image.h
 TriMesh.h
-/Users/m5201138/Research/TriMesh.h
+/Users/m5201138/Desktop/Research-master/TriMesh.h
 chrono
 -
 GLUT/glut.h
@@ -379,16 +379,18 @@ GL/glext.h
 -
 GL/glut.h
 -
+CGAL/Eigen_solver_traits.h
+-
 
-/Users/m5201138/Research/Viewer.h
+/Users/m5201138/Desktop/Research-master/Viewer.h
 Camera.h
-/Users/m5201138/Research/Camera.h
+/Users/m5201138/Desktop/Research-master/Camera.h
 Shader.h
-/Users/m5201138/Research/Shader.h
+/Users/m5201138/Desktop/Research-master/Shader.h
 types.h
-/Users/m5201138/Research/types.h
+/Users/m5201138/Desktop/Research-master/types.h
 TriMesh.h
-/Users/m5201138/Research/TriMesh.h
+/Users/m5201138/Desktop/Research-master/TriMesh.h
 set
 -
 CGAL/Polyhedron_3.h
@@ -396,7 +398,7 @@ CGAL/Polyhedron_3.h
 CGAL/Exact_predicates_inexact_constructions_kernel.h
 -
 
-/Users/m5201138/Research/hrbf_core.h
+/Users/m5201138/Desktop/Research-master/hrbf_core.h
 eigen/Eigen/LU
 -
 eigen/Eigen/Cholesky
@@ -406,9 +408,9 @@ vector
 iostream
 -
 
-/Users/m5201138/Research/hrbf_phi_funcs.h
+/Users/m5201138/Desktop/Research-master/hrbf_phi_funcs.h
 
-/Users/m5201138/Research/implicit_function_crbf.h
+/Users/m5201138/Desktop/Research-master/implicit_function_crbf.h
 vector
 -
 algorithm
@@ -426,9 +428,9 @@ eigen/Eigen/Cholesky
 CGAL/Implicit_surface_3.h
 -
 HRBF_closed.h
-/Users/m5201138/Research/HRBF_closed.h
+/Users/m5201138/Desktop/Research-master/HRBF_closed.h
 
-/Users/m5201138/Research/implicit_function_csg.h
+/Users/m5201138/Desktop/Research-master/implicit_function_csg.h
 CGAL/Exact_predicates_inexact_constructions_kernel.h
 -
 CGAL/Poisson_reconstruction_function.h
@@ -436,7 +438,7 @@ CGAL/Poisson_reconstruction_function.h
 vector
 -
 
-/Users/m5201138/Research/implicit_function_hrbf.h
+/Users/m5201138/Desktop/Research-master/implicit_function_hrbf.h
 CGAL/Exact_predicates_inexact_constructions_kernel.h
 -
 CGAL/number_utils.h
@@ -450,13 +452,13 @@ vector
 iostream
 -
 hrbf_core.h
-/Users/m5201138/Research/hrbf_core.h
+/Users/m5201138/Desktop/Research-master/hrbf_core.h
 hrbf_phi_funcs.h
-/Users/m5201138/Research/hrbf_phi_funcs.h
+/Users/m5201138/Desktop/Research-master/hrbf_phi_funcs.h
 CGAL/Implicit_surface_3.h
 -
 
-/Users/m5201138/Research/implicit_function_min.h
+/Users/m5201138/Desktop/Research-master/implicit_function_min.h
 CGAL/Exact_predicates_inexact_constructions_kernel.h
 -
 CGAL/Poisson_reconstruction_function.h
@@ -468,25 +470,25 @@ cmath
 algorithm
 -
 
-/Users/m5201138/Research/main.cpp
+/Users/m5201138/Desktop/Research-master/main.cpp
 cstdlib
 -
 iostream
 -
 Viewer.h
-/Users/m5201138/Research/Viewer.h
+/Users/m5201138/Desktop/Research-master/Viewer.h
 TriMesh.h
-/Users/m5201138/Research/TriMesh.h
+/Users/m5201138/Desktop/Research-master/TriMesh.h
 
-/Users/m5201138/Research/types.cpp
+/Users/m5201138/Desktop/Research-master/types.cpp
 cmath
 -
 iostream
 -
 types.h
-/Users/m5201138/Research/types.h
+/Users/m5201138/Desktop/Research-master/types.h
 
-/Users/m5201138/Research/types.h
+/Users/m5201138/Desktop/Research-master/types.h
 
 /opt/local/include/CGAL/AABB_face_graph_triangle_primitive.h
 CGAL/AABB_primitive.h

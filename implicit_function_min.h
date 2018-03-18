@@ -19,16 +19,16 @@ public:
 
     double blendUnion(double f,double g) const{
         double d;
-        double r=0.01;
-        //f*=10;
-        //g*=10;
+        double r=0.1;
+        /*f*=10;
+        g*=10;
         if ((f+r)>g && (f-r)<g) {
             double dt = 4.0*(f+g)*(f+g) - 8.0*(f*f+g*g-r*r);
             double x1 = ((2.0*f+2.0*g) + std::sqrt(dt))/4.0;
-            d = x1 - r;
-        } else {
+            d = x1 - r;*/
+        //} else {
             d = std::min(f, g);
-        }
+        //}
         
         return d;
     }

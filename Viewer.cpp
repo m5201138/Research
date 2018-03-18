@@ -86,6 +86,9 @@
 #include <GL/glut.h>
 #endif
 
+#ifdef CGAL_EIGEN3_ENABLED
+#include <CGAL/Eigen_solver_traits.h>
+#endif
 
 
 
@@ -166,7 +169,7 @@ typedef CGAL::Search_traits<double, PointForTree, const double*, Construct_coord
 typedef CGAL::Orthogonal_k_neighbor_search<SearchTraits, Distance> K_neighbor_search;
 typedef K_neighbor_search::Tree Tree;
 
-
+typedef CGAL::Eigen_solver_traits<> Eigen_solver;
 int reconstructionValue;
 double thr;
 double sigma;
@@ -184,6 +187,7 @@ double cellInsideValue;
 bool segmentedColor=true;
 int unionValue=0;
 double epsilonForMarchingBounding=0.05;
+int replaceSwitch;
 std::vector<std::vector<Vector3> > pointsSets;
 std::vector<std::vector<Vector3> > normalsSets;
 std::vector<Poisson_reconstruction_function> functionSets;
@@ -1164,6 +1168,10 @@ void Viewer::read(const char* filename){
             ss>>epsilonForMarchingBounding;
             continue;
         }
+        if(token=="replaceSwitch"){
+            ss>>replaceSwitch;
+            continue;
+        }
     }
     
     in.close();
@@ -1386,12 +1394,12 @@ Poisson_reconstruction_function Poisson_reconstruction(TriMesh* mesh){
     }
 
 
-    
+      Eigen_solver solver;
     Poisson_reconstruction_function
     function(pwn.begin(), pwn.end(),
              CGAL::make_normal_of_point_with_normal_pmap(PointList::value_type()));
         std::cout<<"mesh->numVerts="<<mesh->numVerts()<<std::endl;
-    //if (!function.compute_implicit_function())exit(EXIT_FAILURE);
+    if (!function.compute_implicit_function(true))exit(EXIT_FAILURE);
             std::cout<<"mesh->numVerts="<<mesh->numVerts()<<std::endl;
         return function;
 }
@@ -1479,6 +1487,13 @@ Polyhedron2 takeUnitPolyhedron(){
     return outpoly;
 }
 
+void OutputSelectedPart(const std::string& outFileName, int segnum){
+    std::ofstream out(outFileName.c_str());
+    out<<"txt"<<std::endl;
+    for (int i=0;i<pointsSets[segnum].size();++i){
+        out<<pointsSets[segnum][i].x()<<" "<<pointsSets[segnum][i].y()<<" "<<pointsSets[segnum][i].z()<<std::endl;
+    }
+}
 
 
 void Viewer::initSeg(){
@@ -1556,11 +1571,11 @@ void Viewer::initSeg(){
     for(int i=0;i<meshPtr->numSeg();i++){
         for(int j=0;j<pointsSets[i].size();j++){
             std::cout<<"func="<<functionSets[i](Point(pointsSets[i][j].x(),pointsSets[i][j].y(),pointsSets[i][j].z()))<<std::endl;
-            if(functionSets[i](Point(pointsSets[i][j].x(),pointsSets[i][j].y(),pointsSets[i][j].z()))<=0){
+           // if(functionSets[i](Point(pointsSets[i][j].x(),pointsSets[i][j].y(),pointsSets[i][j].z()))<=0){
                 
                 minPoints.push_back(pointsSets[i][j]);
                 minNormals.push_back(normalsSets[i][j]);
-            }
+         //   }
         }
     }
     std::cout<<"minpoints="<<minPoints.size()<<std::endl;
@@ -1581,7 +1596,7 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
                                 Vec3& selected_normal)
 {
      PointList vertices;
-    std::vector<PointVectorPair> points;
+    std::vector<PointVectorPair> points,pointsForpart;
     int selectedSeg;
     //const unsigned int K=1;
     double selected_x = selected_point.x;
@@ -1592,6 +1607,8 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
     double normal_y = selected_normal.y;
     double normal_z = selected_normal.z;
     double distance,disp;
+    std::vector<Vector3> points2;
+    std::vector<Vector3> normals2;
 
     std::vector<Vec3> vec3Points;
 
@@ -1676,16 +1693,16 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
             pointForTree.push_back(pointtree);
             
         }
-        else{
+        /*else{
             Point p(pointsSets[selectedSeg][i].x(),
                     pointsSets[selectedSeg][i].y(),
                     pointsSets[selectedSeg][i].z());
             vertices.push_back(p);
             Vector tmp(0, 0, 0);
             points.push_back(std::make_pair(p, tmp));
-        }
+        }*/
     }
-
+    if(deformationSwitch==true){
     CGAL::pca_estimate_normals<Concurrency_tag>(points.begin(), points.end(), CGAL::First_of_pair_property_map<PointVectorPair>(), CGAL::Second_of_pair_property_map<PointVectorPair>(), nb_neighbors);
     
     std::vector<PointVectorPair>::iterator unoriented_points_begin =
@@ -1694,8 +1711,7 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
                              CGAL::Second_of_pair_property_map<PointVectorPair>(),
                              nb_neighbors);
     
-    std::vector<Vector3> points2;
-    std::vector<Vector3> normals2;
+
     
     points.erase(unoriented_points_begin, points.end());
     for(unsigned i=0; i<points.size(); i++){
@@ -1706,27 +1722,124 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
         normals2.push_back(n_tmp);
         //    set.insert(Point(points[i].first.x(), points[i].first.y(),points[i].first.z()));
     }
-    points.erase(unoriented_points_begin, points.end());
-    for(unsigned i=0; i<points.size(); i++){
-        Vector3 p_tmp(points[i].first.x(), points[i].first.y(),
-                      points[i].first.z());
-        Vector3 n_tmp(points[i].second.x(), points[i].second.y(),points[i].second.z());
-        points2.push_back(p_tmp);
-        normals2.push_back(n_tmp);
     }
+    //read selected part and delete selected part
+    if(replaceSwitch==1){
+    pointsSets[8].erase(pointsSets[8].begin(),pointsSets[8].end());
+    std::string line;
+    std::ifstream in("rotate.txt");
+    std::vector<Vector3> normalsForPart;
+    std::vector<Vector3> points2Forpart;
+    while(getline(in, line))
+    {
+        std::stringstream ss(line);
+        double x, y, z;
+        ss >> x >> y >> z;
+        pointsSets[8].push_back(Vector3(x,y,z));
+        pointsForpart.push_back(std::make_pair(Point(x,y,z),Vector(0,0,0)));
+        continue;
+    }
+    CGAL::pca_estimate_normals<Concurrency_tag>(pointsForpart.begin(), pointsForpart.end(), CGAL::First_of_pair_property_map<PointVectorPair>(), CGAL::Second_of_pair_property_map<PointVectorPair>(), nb_neighbors);
+    std::vector<PointVectorPair>::iterator unoriented_points_begin2 =
+    CGAL::mst_orient_normals(pointsForpart.begin(), pointsForpart.end(),
+                             CGAL::First_of_pair_property_map<PointVectorPair>(),
+                             CGAL::Second_of_pair_property_map<PointVectorPair>(),
+                             nb_neighbors);
+    pointsForpart.erase(unoriented_points_begin2, pointsForpart.end());
+    for(unsigned i=0; i<pointsForpart.size(); i++){
+        Vector3 p_tmp(pointsForpart[i].first.x(), pointsForpart[i].first.y(),
+                      pointsForpart[i].first.z());
+        Vector3 n_tmp(pointsForpart[i].second.x(), pointsForpart[i].second.y(),pointsForpart[i].second.z());
+        points2Forpart.push_back(p_tmp);
+        normalsForPart.push_back(n_tmp);
+        std::cout<<"points and normal="<<pointsForpart[i].first.x()<<" "<<pointsForpart[i].first.y()<<" "<<pointsForpart[i].first.z()<<" "<<pointsForpart[i].second.x()<<" "<<pointsForpart[i].second.y()<<" "<<pointsForpart[i].second.z()<<std::endl;
+    }
+    createOFFFile("selectPointcloud.off",points2Forpart,normalsForPart);
     
-
+    Poisson_reconstruction_function functionForPart=Poisson_reconstruction(points2Forpart,normalsForPart,meshPtr);
+    functionSets[8]=functionForPart;
     
+    pointsSets[0].erase(pointsSets[0].begin(),pointsSets[0].end());
+    std::string line0;
+    std::ifstream in0("rotate0.txt");
+    normalsForPart.erase(normalsForPart.begin(),normalsForPart.end());
+    points2Forpart.erase(points2Forpart.begin(),points2Forpart.end());
+    pointsForpart.erase(pointsForpart.begin(),pointsForpart.end());
+    while(getline(in0, line0))
+    {
+        std::stringstream ss(line0);
+        double x, y, z;
+        ss >> x >> y >> z;
+        pointsSets[0].push_back(Vector3(x,y,z));
+        pointsForpart.push_back(std::make_pair(Point(x,y,z),Vector(0,0,0)));
+        continue;
+    }
+    CGAL::pca_estimate_normals<Concurrency_tag>(pointsForpart.begin(), pointsForpart.end(), CGAL::First_of_pair_property_map<PointVectorPair>(), CGAL::Second_of_pair_property_map<PointVectorPair>(), nb_neighbors);
+    std::vector<PointVectorPair>::iterator unoriented_points_begin3 =
+    CGAL::mst_orient_normals(pointsForpart.begin(), pointsForpart.end(),
+                             CGAL::First_of_pair_property_map<PointVectorPair>(),
+                             CGAL::Second_of_pair_property_map<PointVectorPair>(),
+                             nb_neighbors);
+    pointsForpart.erase(unoriented_points_begin3, pointsForpart.end());
+    for(unsigned i=0; i<pointsForpart.size(); i++){
+        Vector3 p_tmp(pointsForpart[i].first.x(), pointsForpart[i].first.y(),
+                      pointsForpart[i].first.z());
+        Vector3 n_tmp(pointsForpart[i].second.x(), pointsForpart[i].second.y(),pointsForpart[i].second.z());
+        points2Forpart.push_back(p_tmp);
+        normalsForPart.push_back(n_tmp);
+        std::cout<<"points and normal="<<pointsForpart[i].first.x()<<" "<<pointsForpart[i].first.y()<<" "<<pointsForpart[i].first.z()<<" "<<pointsForpart[i].second.x()<<" "<<pointsForpart[i].second.y()<<" "<<pointsForpart[i].second.z()<<std::endl;
+    }
+    createOFFFile("selectPointcloud0.off",points2Forpart,normalsForPart);
+    
+    Poisson_reconstruction_function functionForPart0=Poisson_reconstruction(points2Forpart,normalsForPart,meshPtr);
+    functionSets[0]=functionForPart0;
+    
+    pointsSets[2].erase(pointsSets[2].begin(),pointsSets[2].end());
+    std::string line1;
+    std::ifstream in1("rotate1.txt");
+    normalsForPart.erase(normalsForPart.begin(),normalsForPart.end());
+    points2Forpart.erase(points2Forpart.begin(),points2Forpart.end());
+    pointsForpart.erase(pointsForpart.begin(),pointsForpart.end());
+    while(getline(in1, line1))
+    {
+        std::stringstream ss(line1);
+        double x, y, z;
+        ss >> x >> y >> z;
+        pointsSets[2].push_back(Vector3(x,y,z));
+        pointsForpart.push_back(std::make_pair(Point(x,y,z),Vector(0,0,0)));
+        continue;
+    }
+    CGAL::pca_estimate_normals<Concurrency_tag>(pointsForpart.begin(), pointsForpart.end(), CGAL::First_of_pair_property_map<PointVectorPair>(), CGAL::Second_of_pair_property_map<PointVectorPair>(), nb_neighbors);
+    std::vector<PointVectorPair>::iterator unoriented_points_begin4 =
+    CGAL::mst_orient_normals(pointsForpart.begin(), pointsForpart.end(),
+                             CGAL::First_of_pair_property_map<PointVectorPair>(),
+                             CGAL::Second_of_pair_property_map<PointVectorPair>(),
+                             nb_neighbors);
+    pointsForpart.erase(unoriented_points_begin4, pointsForpart.end());
+    for(unsigned i=0; i<pointsForpart.size(); i++){
+        Vector3 p_tmp(pointsForpart[i].first.x(), pointsForpart[i].first.y(),
+                      pointsForpart[i].first.z());
+        Vector3 n_tmp(pointsForpart[i].second.x(), pointsForpart[i].second.y(),pointsForpart[i].second.z());
+        points2Forpart.push_back(p_tmp);
+        normalsForPart.push_back(n_tmp);
+        std::cout<<"points and normal="<<pointsForpart[i].first.x()<<" "<<pointsForpart[i].first.y()<<" "<<pointsForpart[i].first.z()<<" "<<pointsForpart[i].second.x()<<" "<<pointsForpart[i].second.y()<<" "<<pointsForpart[i].second.z()<<std::endl;
+    }
+    createOFFFile("selectPointcloud1.off",points2Forpart,normalsForPart);
+    
+    Poisson_reconstruction_function functionForPart1=Poisson_reconstruction(points2Forpart,normalsForPart,meshPtr);
+    functionSets[2]=functionForPart1;
+}
+    if(deformationSwitch==true){
     Poisson_reconstruction_function function1=Poisson_reconstruction(points2,normals2,meshPtr);
     functionSets[selectedSeg]=function1;
+    }
     implicit_function_csg csgFunction(functionSets);
     implicit_function_min minFunction(functionSets);
-    
     for(int i=0;i<points2.size();i++){
-            if(function1(Point(points2[i].x(),points2[i].y(),points2[i].z()))<=0){
+           // if(function1(Point(points2[i].x(),points2[i].y(),points2[i].z()))<=0){
                 minPoints.push_back(points2[i]);
                 minNormals.push_back(normals2[i]);
-        }
+       // }
     }
     //Compute bounding box
     double max_x=minPoints[0].x(),min_x=minPoints[0].x(),max_y=minPoints[0].y(),min_y=minPoints[0].y(),max_z=minPoints[0].z(),min_z=minPoints[0].z();
@@ -1758,8 +1871,14 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
 
     if(mesher==0){
         normalize();
+        if(replaceSwitch==1){
+        OutputSelectedPart("selectPointcloud.txt",3);
+        OutputSelectedPart("selectPointcloud_0.txt",0);
+        OutputSelectedPart("selectPointcloud_1.txt",1);
+        }
             const auto startTime = std::chrono::system_clock::now();
-            std::cout<<"Marching start"<<std::endl;
+            std::cout<<"Marching start "<<unionValue<<std::endl;
+        
             for (size_t i = 0; i < mcgrid.structuredGrid.size(); ++i) {
                 if(unionValue==0){
                 mcgrid.results[i]=csgFunction(Point(mcgrid.structuredGrid[i](0),mcgrid.structuredGrid[i](1),mcgrid.structuredGrid[i](2)));
@@ -1821,7 +1940,7 @@ Viewer::selectedVertDeformation(Vec3& selected_point,
         dl.insert(Delaunay::Point(ip.x(), ip.y(), ip.z()+r));
         dl.insert(Delaunay::Point(ip.x(), ip.y(), ip.z()-r));
         
-        Cell_inside<Delaunay, implicit_function_min> cellin(dl, minFunction,eps);
+        Cell_inside<Delaunay, implicit_function_min> cellin(dl, minFunction,cellInsideValue);
        // Surface_builder<Delaunay, Cell_inside<Delaunay, implicit_function_csg>, SurfaceMesh> b(dl, cellin);
          Surface_builder_dual<Delaunay, implicit_function_min, Cell_inside<Delaunay, implicit_function_min>, SurfaceMesh> b(dl, minFunction, cellin);
         //output_mesh.delegate(b);

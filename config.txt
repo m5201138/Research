@@ -1,5 +1,5 @@
 reconstruction(Hrbf=0,closedHrbf=1,Poisson=2) 2
-threshold 0.09
+threshold 0.1
 sigma 200
 nb_neighbors 18
 nb_neighbors2 6
@@ -7,9 +7,10 @@ sm_angle 20.0
 sm_radius 5.0
 sm_distance 0.15
 resampling(off=0,on=1) 0
-mesher(marching=0,OurDelaunay=1,CGAL’sDelaunay=2) 0
-gridsize 40
-Cell_inside_value -0.005
+mesher(marching=0,OurDelaunay=1,CGAL’sDelaunay=2) 1
+gridsize 128
+Cell_inside_value 0
 bounding_box_size 1.0
 union(R-function=0,min=1,mymin=2) 1
-epsilonForMarchingBounding 0.08
+epsilonForMarchingBounding 0.5
+replaceSwitch 0

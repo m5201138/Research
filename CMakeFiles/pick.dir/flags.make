@@ -6,5 +6,5 @@ CXX_FLAGS = -pipe -Os -stdlib=libc++ -O3 -Wextra -Wno-unused-parameter -Wno-unus
 
 CXX_DEFINES = -DCGAL_EIGEN3_ENABLED -DCGAL_USE_GMP -DCGAL_USE_MPFR
 
-CXX_INCLUDES = -I/Users/m5201138/Research -isystem /opt/local/include -isystem /opt/local/include/eigen3 -I/System/Library/Frameworks/GLUT.framework/Headers 
+CXX_INCLUDES = -I/Users/m5201138/Desktop/Research-master -isystem /opt/local/include -isystem /opt/local/include/eigen3 -I/System/Library/Frameworks/GLUT.framework/Headers 
 

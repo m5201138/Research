@@ -4,15 +4,15 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/m5201138/Research/CIsoSurface.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/CIsoSurface.cpp.o"
-  "/Users/m5201138/Research/Camera.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/Camera.cpp.o"
-  "/Users/m5201138/Research/Image.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/Image.cpp.o"
-  "/Users/m5201138/Research/Shader.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/Shader.cpp.o"
-  "/Users/m5201138/Research/TriMesh.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/TriMesh.cpp.o"
-  "/Users/m5201138/Research/Vectors.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/Vectors.cpp.o"
-  "/Users/m5201138/Research/Viewer.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/Viewer.cpp.o"
-  "/Users/m5201138/Research/main.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/main.cpp.o"
-  "/Users/m5201138/Research/types.cpp" "/Users/m5201138/Research/CMakeFiles/pick.dir/types.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/CIsoSurface.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/CIsoSurface.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/Camera.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/Camera.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/Image.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/Image.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/Shader.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/Shader.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/TriMesh.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/TriMesh.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/Vectors.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/Vectors.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/Viewer.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/Viewer.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/main.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/main.cpp.o"
+  "/Users/m5201138/Desktop/Research-master/types.cpp" "/Users/m5201138/Desktop/Research-master/CMakeFiles/pick.dir/types.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "Clang")
 

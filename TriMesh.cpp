@@ -251,12 +251,14 @@ void TriMesh::segmentation(void){
         std::cerr << "Not a valid off file." << std::endl;
         //  return EXIT_FAILURE;
     }
+    const std::size_t number_of_clusters = 2;       // use 4 clusters in soft clustering
+    const double smoothing_lambda = 0.26;
     // create a property-map for segment-ids
     typedef std::map<Polyhedron::Facet_const_handle, std::size_t> Facet_int_map;
     Facet_int_map internal_segment_map;
     boost::associative_property_map<Facet_int_map> segment_property_map(internal_segment_map);
     // calculate SDF values and segment the mesh using default parameters.
-    number_of_segments = CGAL::segmentation_via_sdf_values(mesh, segment_property_map);
+    number_of_segments = CGAL::segmentation_via_sdf_values(mesh, segment_property_map,2.0 / 3.0 * CGAL_PI, 25, number_of_clusters, smoothing_lambda);
     std::cout << "Number of segments: " << number_of_segments << std::endl;
     // print segment-ids
     for(Polyhedron::Facet_const_iterator facet_it = mesh.facets_begin();
